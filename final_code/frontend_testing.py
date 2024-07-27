@@ -7,8 +7,9 @@ import spacy
 import streamlit as st
 import pandas as pd
 import time
+from difflib import SequenceMatcher
 
-# st.set_page_config(layout="wide")
+
 st.set_page_config(layout="wide")
 
 def process(uploaded_image):
@@ -24,7 +25,7 @@ def process(uploaded_image):
     elif len(opencv_image.shape) == 3 and opencv_image.shape[2] == 3:
         opencv_image = cv2.cvtColor(opencv_image, cv2.COLOR_RGB2BGR)
     else:
-        raise ValueError("Unsupported image format") # Should neverr get here!
+        raise ValueError("Unsupported image format") # Should never get here!
     
     return opencv_image
 
@@ -64,18 +65,31 @@ def draw_bounding_boxes(image, detection_boxes, entities):
             "bounding_box": {"left": left, "top": top, "right": right, "bottom": bottom}
         })
 
-        # st.write(f"Bounding Box {i+1}: {left, top, right, bottom}")
-        # cv2.putText(image, detection_boxes['char'][i], (left, height - bottom), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
-
     return image, ocr_results
 
-def testing():
-    # in this function, add a text box which will take name of person and date into account.
-    # if the name is present in the entity, calculate the accuraccy by extracted letters
-    # if the date is present in the entity, calculate the accuraccy by extracted letters
-    # return the accuraccy of the name and date
-    # if the name and date is not present, return 0
-    pass
+def calculate_similarity(extracted_text, input_text):
+    # check a word similar to extracted text in input text
+    return SequenceMatcher(None, extracted_text.text.lower(), input_text.lower()).ratio()
+
+
+
+def testing(entities):
+    name_input = st.text_input("Enter the name of the person:")
+    
+    name_accuracy = 0
+
+    if name_input:
+       
+        for value in entities:
+            if name_input.lower() in value.text.lower():
+                name_accuracy = 100
+                break
+            else:
+                similarity = calculate_similarity(value, name_input)
+                name_accuracy = max(name_accuracy, similarity * 100)
+
+
+    return name_accuracy
 
 def main():
     st.title("Passport OCR and NER Application")
@@ -120,6 +134,9 @@ def main():
                 )]
                 st.dataframe(ner)
 
+                st.write("All Entities:")
+                st.write(doc)
+
         with col2:
             image_with_boxes,ocr_results = draw_bounding_boxes(processed_image, detection_boxes, doc.ents)
             st.image(image_with_boxes, caption="Passport image with bounding boxes", use_column_width=True)
@@ -127,6 +144,10 @@ def main():
         st.write("The coordinates of the bounding boxes are as follows:")
         st.json(ocr_results)
         
+        # Add the testing function
+        st.write("Testing OCR Accuracy:")
+        name_accuracy = testing(doc.ents)
+        st.write(f"Name Accuracy: {name_accuracy:.2f}%")
+
 if __name__ == "__main__":
     main()
-    

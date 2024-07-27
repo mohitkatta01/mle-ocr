@@ -1,0 +1,9 @@
+{
+    "results": [
+        {
+            "image_path": "uploaded_images/Indonesia.jpg",
+            "ocr_results": [
+                {
+                    "text": "Repiblii iNdoNesIA",
+                    "bounding_box": {
+                        "left": 
